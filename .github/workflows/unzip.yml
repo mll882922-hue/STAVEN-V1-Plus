@@ -1,0 +1,63 @@
+name: Unzip STAVEN
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  unzip:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Find and Unzip
+        shell: bash
+        run: |
+          set -e
+
+          ZIP_FILE=$(find . -maxdepth 1 -type f -iname "*.zip" -print -quit)
+
+          if [ -z "$ZIP_FILE" ]; then
+            echo "❌ لم يتم العثور على أي ملف ZIP في الريبو."
+            exit 1
+          fi
+
+          echo "✅ تم العثور على: $ZIP_FILE"
+
+          mkdir -p extracted
+
+          unzip -o "$ZIP_FILE" -d extracted
+
+          echo "📦 تم فك الضغط بنجاح."
+
+          # إذا كان داخل ZIP مجلد رئيسي واحد، انقل محتوياته إلى الريبو
+          TOP_DIRS=$(find extracted -mindepth 1 -maxdepth 1 -type d | wc -l)
+          TOP_FILES=$(find extracted -mindepth 1 -maxdepth 1 -type f | wc -l)
+
+          if [ "$TOP_DIRS" -eq 1 ] && [ "$TOP_FILES" -eq 0 ]; then
+            FIRST_DIR=$(find extracted -mindepth 1 -maxdepth 1 -type d -print -quit)
+            cp -a "$FIRST_DIR"/. .
+          else
+            cp -a extracted/. .
+          fi
+
+          rm -rf extracted
+          rm -f "$ZIP_FILE"
+
+          echo "✅ تم استخراج ملفات STAVEN."
+
+      - name: Commit extracted files
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add .
+
+          git commit -m "Extract STAVEN V1 Enhanced" || echo "Nothing to commit"
+
+          git push

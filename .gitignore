@@ -1,0 +1,10 @@
+node_modules/
+.env
+data/*.json
+logs/
+*.log
+session/
+appstate/
+cookies/
+fca-config.json
+Fca_Database/
